@@ -1,0 +1,31 @@
+#include <Arduino.h>
+
+#define TRIG 26
+#define ECHO 27
+
+void setup() {
+  pinMode(TRIG, OUTPUT);
+  pinMode(ECHO, INPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Phát xung trigger 10µs
+  digitalWrite(TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
+
+  // Đo thời gian echo
+  long duration = pulseIn(ECHO, HIGH);
+
+  // Tính khoảng cách (cm)
+  float distance = duration * 0.0343 / 2;
+
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  delay(500);
+}

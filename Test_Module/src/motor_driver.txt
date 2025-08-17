@@ -1,0 +1,49 @@
+#include <Wire.h>
+#include <Arduino.h>
+
+// Chân kết nối DRV8833
+#define FAULT_PIN 18
+#define B1_PIN    23
+#define B2_PIN    19
+
+// Cấu hình PWM
+#define PWM_FREQ     20000   // 20 kHz để động cơ êm hơn
+#define PWM_RES      8       // 8-bit (0-255)
+#define PWM_CH_B1    0
+#define PWM_CH_B2    1
+
+void setup() {
+  Serial.begin(9600);
+
+  // Cấu hình chân FAULT
+  pinMode(FAULT_PIN, INPUT_PULLUP);
+
+  // Cấu hình PWM cho B1 và B2
+  ledcSetup(PWM_CH_B1, PWM_FREQ, PWM_RES);
+  ledcSetup(PWM_CH_B2, PWM_FREQ, PWM_RES);
+
+  ledcAttachPin(B1_PIN, PWM_CH_B1);
+  ledcAttachPin(B2_PIN, PWM_CH_B2);
+
+  Serial.println("DRV8833 ESP32 test...");
+  if (digitalRead(FAULT_PIN) == LOW) {
+    Serial.println("Loi DRV8833! Kiem tra ket noi hoac dong co.");
+    ledcWrite(PWM_CH_B1, 0);
+    ledcWrite(PWM_CH_B2, 0);
+    delay(1000);
+    return;
+  }
+}
+
+void loop() {
+  // Quay thuận
+  Serial.println("Quay thuan...");
+  ledcWrite(PWM_CH_B1, 255); // (255 max)
+  ledcWrite(PWM_CH_B2, 0);
+  delay(2000);
+  // Dừng
+  Serial.println("Dung...");
+  ledcWrite(PWM_CH_B1, 0);
+  ledcWrite(PWM_CH_B2, 0);
+  delay(1000);
+}

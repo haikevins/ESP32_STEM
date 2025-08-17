@@ -1,0 +1,20 @@
+#include <Wire.h>
+#include <Arduino.h>
+
+void setup() {
+  Wire.begin(21, 22); // SDA, SCL
+  Serial.begin(9600);
+  Serial.println("\nScanning I2C...");
+
+  byte count = 0;
+  for (byte address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    if (Wire.endTransmission() == 0) {
+      Serial.printf("Found device at 0x%02X\n", address);
+      count++;
+    }
+  }
+  Serial.printf("Found %d device(s)\n", count);
+}
+
+void loop() {}

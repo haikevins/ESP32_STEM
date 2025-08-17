@@ -1,0 +1,27 @@
+#include "Arduino.h"
+#include "DFRobotDFPlayerMini.h"
+
+HardwareSerial mySerial(1);  // Dùng UART1
+
+DFRobotDFPlayerMini myDFPlayer;
+
+void setup()
+{
+  Serial.begin(9600); // Debug
+  mySerial.begin(9600, SERIAL_8N1, 16, 17); // RX=16, TX=17
+
+  Serial.println("Initializing DFPlayer ...");
+  if (!myDFPlayer.begin(mySerial)) {
+    Serial.println("Không tìm thấy DFPlayer!");
+    while (true);
+  }
+
+  Serial.println("DFPlayer sẵn sàng.");
+  myDFPlayer.volume(30);  // Âm lượng 0~30
+  myDFPlayer.play(1);     // Phát file số 1 trong thẻ SD
+}
+
+void loop()
+{
+
+}

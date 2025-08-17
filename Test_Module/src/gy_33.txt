@@ -1,0 +1,109 @@
+#include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_TCS34725.h>
+
+// Khởi tạo TCS34725
+Adafruit_TCS34725 tcs(TCS34725_INTEGRATIONTIME_614MS, TCS34725_GAIN_1X);
+
+// Bảng màu cơ bản
+const char* colorNames[] = {
+  "Trang", "Den", "Xanh la", "Xanh nhat", "Vang",
+  "Xanh dam", "Hong", "Cam", "Do", "Tim", "Khong co mau"
+};
+const int NUM_COLORS = 11;
+
+// Mảng lưu giá trị RGB đã hiệu chuẩn (0–255)
+struct RGB {
+  uint8_t r, g, b;
+} colorCal[NUM_COLORS];
+
+// Hệ số hiệu chuẩn cho từng kênh
+float calR = 1.0, calG = 1.0, calB = 1.0;
+
+// Hiệu chuẩn hệ số bằng màu trắng
+void calibrateFactor() {
+  uint16_t r, g, b, c;
+  Serial.println("Dat mau Trang de hieu chinh he so...");
+  delay(5000); // đủ thời gian đặt màu
+  tcs.getRawData(&r, &g, &b, &c);
+
+  // Tránh chia cho 0
+  calR = (r > 0) ? 255.0 / r : 1.0;
+  calG = (g > 0) ? 255.0 / g : 1.0;
+  calB = (b > 0) ? 255.0 / b : 1.0;
+
+  Serial.printf("He so calib: R=%.2f G=%.2f B=%.2f\n", calR, calG, calB);
+}
+
+// Hiệu chuẩn tất cả các màu
+void calibrateColors() {
+  uint16_t r, g, b, c;
+
+  for (int i = 0; i < NUM_COLORS; i++) {
+    if (i < NUM_COLORS - 1) {
+      Serial.printf("Dat mau %s truoc cam bien...\n", colorNames[i]);
+    } else {
+      Serial.println("De khong co mau truoc cam bien...");
+    }
+
+    delay(5000); // thời gian đặt mẫu
+    tcs.getRawData(&r, &g, &b, &c);
+
+    // Chuẩn hóa về 0–255 theo hệ số calR/G/B
+    colorCal[i].r = constrain(r * calR, 0, 255);
+    colorCal[i].g = constrain(g * calG, 0, 255);
+    colorCal[i].b = constrain(b * calB, 0, 255);
+
+    Serial.printf("Da luu %s: %d %d %d\n", 
+                  colorNames[i], colorCal[i].r, colorCal[i].g, colorCal[i].b);
+  }
+  Serial.println("Hieu chuan tat ca cac mau xong!");
+}
+
+// Tìm màu gần nhất dựa trên RGB đã hiệu chuẩn
+const char* detectColor(uint8_t rMeas, uint8_t gMeas, uint8_t bMeas) {
+  int closestIndex = 0;
+  float minDist = 1e6;
+
+  for (int i = 0; i < NUM_COLORS; i++) {
+    float dr = rMeas - colorCal[i].r;
+    float dg = gMeas - colorCal[i].g;
+    float db = bMeas - colorCal[i].b;
+    float dist = dr*dr + dg*dg + db*db;
+
+    if (dist < minDist) {
+      minDist = dist;
+      closestIndex = i;
+    }
+  }
+  return colorNames[closestIndex];
+}
+
+void setup() {
+  Serial.begin(115200);   // dùng baud cao để tránh nghẽn
+  Wire.begin(21, 22);
+
+  if (!tcs.begin()) {
+    Serial.println("Khong tim thay cam bien! Kiem tra ket noi I2C.");
+    return;
+  }
+  Serial.println("Phat hien cam bien GY-33/TCS34725!");
+
+  calibrateFactor();     // Lấy hệ số calR, calG, calB
+  calibrateColors();    // Lưu các màu chuẩn theo hệ số
+}
+
+void loop() {
+  uint16_t rRaw, gRaw, bRaw, c;
+  tcs.getRawData(&rRaw, &gRaw, &bRaw, &c);
+
+  // Chuẩn hóa về 0–255
+  uint8_t r = constrain(rRaw * calR, 0, 255);
+  uint8_t g = constrain(gRaw * calG, 0, 255);
+  uint8_t b = constrain(bRaw * calB, 0, 255);
+
+  const char* colorName = detectColor(r, g, b);
+
+  Serial.printf("R:%d G:%d B:%d => Mau: %s\n", r, g, b, colorName);
+  delay(1000); // giảm tốc độ in ra
+}

@@ -1,0 +1,29 @@
+#include <Arduino.h>
+
+// Chân joystick
+#define VRX_PIN  39   // Chân ADC cho trục X
+#define VRY_PIN  34   // Chân ADC cho trục Y
+#define SW_PIN   36   // Chân digital cho nút nhấn
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(VRX_PIN, INPUT);
+  pinMode(VRY_PIN, INPUT);
+  pinMode(SW_PIN, INPUT_PULLUP);  // Nút nhấn thường thả nổi, nên bật pullup
+}
+
+void loop() {
+  int xValue = analogRead(VRX_PIN);  // Đọc giá trị X (0 - 4095)
+  int yValue = analogRead(VRY_PIN);  // Đọc giá trị Y (0 - 4095)
+  int swValue = digitalRead(SW_PIN); // Đọc trạng thái nút
+
+  Serial.print("X: ");
+  Serial.print(xValue);
+  Serial.print(" | Y: ");
+  Serial.print(yValue);
+  Serial.print(" | SW: ");
+  Serial.println(swValue == LOW ? "Nhấn" : "Thả");
+
+  delay(200);
+}
