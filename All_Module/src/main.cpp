@@ -23,17 +23,17 @@ DFPlayerManager dfPlayerManager;
 #define THRESHOLD_TIME 1000
 
 void setup() {
-  Serial.begin(115200);
-  delay(1000);  // Đợi Serial ổn định
+  Serial.begin(9600);
+  delay(2000);  // Đợi Serial ổn định
 
   Serial.println("Initializing...");
   // Khởi tạo các module
-  gy33Manager.Init();
+  // gy33Manager.Init();
   relayManager.Init();
   dht11Manager.Init();
   hcsr04Manager.Init();
   buttonManager.Init();
-  rgbLedManager.Init();
+  // rgbLedManager.Init();
   varistorManager.Init();
   joystickManager.Init();
 
@@ -59,38 +59,56 @@ void loop() {
   if (millis() - last_time >= THRESHOLD_TIME) {
     last_time = millis();
 
+    // GY 33
+    uint8_t r, g, b;
+    const char* colorName = gy33Manager.Read_Color(r, g, b);
+    Serial.printf("Color: %s", colorName);
+    Serial.printf(" (R: %d, G: %d, B: %d)\n", r, g, b);   
+
+    // HCSR04
+    float distance = hcsr04Manager.Read_Distance();
+    Serial.printf("Distance: %.2f cm\n", distance);
+
+    if (distance < 10.0) {
+      relayManager.Turn_On();
+    } else {
+      relayManager.Turn_Off();
+    }
+
     // DHT11
     float temperature, humidity;
     dht11Manager.Read_Sensor(temperature, humidity);
     Serial.printf("Temperature: %.2f oC, Humidity: %.2f %%\n", temperature, humidity);
 
-    // HC-SR04
-    float distance = hcsr04Manager.Read_Distance();
-    Serial.printf("Distance: %.2f cm\n", distance);
-
     // Varistor
     float voltage;
     varistorManager.Read(voltage);
     Serial.printf("Varistor Voltage: %.2f V\n", voltage);
-
-    // Relay
-    static bool relayState = false;
-    if (!relayState) {
-      relayManager.Turn_On();
-      relayState = true;
-    } else {
-      relayManager.Turn_Off();
-      relayState = false;
+    if (voltage == 0.0) {
+      dfPlayerManager.Set_Volume(0);
+    } else if (voltage < 1.1) {
+      dfPlayerManager.Set_Volume(10);
+    } else if (voltage < 2.2) {
+      dfPlayerManager.Set_Volume(20);
+    } else if (voltage <= 3.3) {
+      dfPlayerManager.Set_Volume(30);
     }
 
-    // GY 33
-    uint8_t r, g, b;
-    const char* colorName = gy33Manager.Read_Color(r, g, b);
-    Serial.printf("Color: %s", colorName);
-    Serial.printf(" (R: %d, G: %d, B: %d)\n", r, g, b);
+    // Joystick
+    int x, y;
+    joystickManager.Read(x, y);
+    Serial.printf("Joystick Position: X: %d, Y: %d\n", x, y);
 
-    // RGB LED
-    rgbLedManager.Set_Color(r, g, b);
+    // Motor Driver
+    if ( x < 1940 && x > 1900) {
+      if (y > 4000) {
+        motorManager.Turn_Left();
+      } else if (y < 100) {
+        motorManager.Turn_Right();
+      } else {
+        motorManager.Stop();
+      }
+    }
   }
 
   // DF Player
@@ -107,4 +125,6 @@ void loop() {
       dfPlayerManager.Stop();  // Stop playback
     }
   }
+
+  buttonManager.Update();
 }

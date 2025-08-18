@@ -5,7 +5,7 @@
 
 #define BUTTON_PIN 36
 
-#define BUTTON_DEBOUNCE_SAMPLE 64
+#define BUTTON_DEBOUNCE_SAMPLE 16
 #define BUTTON_HIGH_THRESHOLD 70
 
 class ButtonManager {

@@ -14,6 +14,6 @@ public:
   virtual ~JoystickManager();
 
   void Init();
-  void Read_Joystick(int &x, int &y);
+  void Read(int &x, int &y);
 };
 #endif  // __JOYSTICK_MANAGER_H__
